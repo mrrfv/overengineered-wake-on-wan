@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "fastify": "^4.11.0",
+    "node-fetch": "^3.3.0",
+    "systeminformation": "^5.17.3",
+    "wol": "^1.0.7"
+  }
+}

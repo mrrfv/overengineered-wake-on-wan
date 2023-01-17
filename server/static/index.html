@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {margin: 5% auto; background: #f2f2f2; color: #444444; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.8; text-shadow: 0 1px 0 #ffffff; max-width: 73%;}
+        code {background: white;}
+        a {border-bottom: 1px solid #444444; color: #444444; text-decoration: none;}
+        a:hover {border-bottom: 0;}
+    </style>
+    <title>Overengineered WoW</title>
+</head>
+<body>
+    <h1>Overengineered Wake on WAN</h1>
+    <p><small>Device status last updated <span id="status_last_updated">...</span></small></p>
+    <p><small>System info last updated <span id="info_last_updated">...</span></small></p>
+    <h2>System Info</h2>
+    <ul>
+        <li>System: <span id="system_info">...</span></li>
+        <li>Virtual Machine: <span id="system_virtualized">...</span></li>
+
+        <li>CPU: <span id="cpu_info">...</span></li>
+        <li>Clock Speed: <span id="cpu_clock">...</span> GHz</li>
+
+        <li>RAM Usage: <span id="ram_used">...</span> / <span id="ram_total">...</span></li>
+        <li>Swap Usage: <span id="swap_used">...</span> / <span id="swap_total">...</span></li>
+    </ul>
+    <h3>Device Status: <b id="status">...</b></h3>
+
+    <hr>
+
+    <h2>Actions</h2>
+
+    <p id="actionsDisabled" style="display: none;">Sleep & reboot actions are disabled if the companion server cannot be reached.</p>
+
+    <h3>Wake Server</h3>
+    <p>The button below will attempt to turn on your machine using Wake on LAN.</p>
+    <button id="wakeButton">Wake Server</button>
+
+    <h3>Enter Sleep Mode</h3>
+    <p>If the server is turned on and responding to requests, this button will make it enter sleep mode, allowing you to save energy.</p>
+    <button id="sleepButton">Enter Sleep Mode</button>
+
+    <h3>Reboot Server</h3>
+    <p>If the server is turned on and responding to requests, this button will reboot your machine, which is useful if it's malfunctioning. Please keep in mind that if OWoW's companion server isn't set to run on startup, you will have limited control over your machine after rebooting (only wake on lan will be available).</p>
+    <button id="rebootButton">Enter Sleep Mode</button>
+
+    <script>
+        // Helper function, ty stackoverflow
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        async function fetch_status() {
+            const resp = await fetch("/status?nocache=" + Date.now());
+            if (resp.ok) {
+                document.getElementById('status_last_updated').innerText = Date();
+            }
+            const status = await resp.json();
+            document.getElementById('status').innerText = `Monitored web server ${status.web_ok ? "online" : "offline"}, companion server ${status.companion_ok ? "online" : "offline"}`;
+
+            for (const button of ['sleepButton', 'rebootButton']) {
+                if (status.companion_ok) {
+                    document.getElementById(button).disabled = false;
+                } else if (status.companion_ok === false) {
+                    document.getElementById(button).disabled = true;
+                }
+            }
+
+            if (status.companion_ok) {
+                document.getElementById('actionsDisabled').style.display = 'none';
+            } else {
+                document.getElementById('actionsDisabled').style.display = 'block';
+            }
+        }
+
+        async function fetch_info() {
+            const resp = await fetch("/proxy/info");
+            if (resp.ok) {
+                document.getElementById('info_last_updated').innerText = Date();
+            }
+            const {system_info, cpu_info, ram_info} = await resp.json();
+            
+            document.getElementById('system_info').innerText = `${system_info.manufacturer} ${system_info.model}`;
+            document.getElementById('system_virtualized').innerText = system_info.virtual ? "Yes" : "No";
+
+            document.getElementById('cpu_info').innerText = `${cpu_info.manufacturer} ${cpu_info.brand}`;
+            document.getElementById('cpu_clock').innerText = `${cpu_info.speed}`;
+
+            document.getElementById('ram_total').innerText = formatBytes(ram_info.total);
+            document.getElementById('ram_used').innerText = formatBytes(ram_info.used);
+            document.getElementById('swap_total').innerText = formatBytes(ram_info.swaptotal);
+            document.getElementById('swap_used').innerText = formatBytes(ram_info.swapused);
+        }
+
+        setInterval(() => {
+            fetch_status();
+        }, 800);
+        fetch_info();
+        setInterval(() => {
+            fetch_info();
+        }, 30 * 1000);
+
+        // ---
+        // Buttons
+        // ---
+
+        async function wakeMachine() {
+            const resp = await fetch("/wake");
+            const json = resp.json();
+            
+            if (resp.ok) {
+                alert("Successfully sent wake packet!\n\nDebug info:\n" + json.response);
+            } else {
+                alert("Couldn't wake the machine.\n\nDebug info:\n" + json.message);
+            }
+        }
+
+        async function rebootMachine() {
+            const resp = await fetch("/proxy/power?action=reboot");
+            const json = resp.json();
+            
+            if (resp.ok) {
+                alert("Success!\n\nDebug info:\n" + json.response);
+            } else {
+                alert("Couldn't reboot the machine.");
+                return;
+            }
+        }
+
+        async function suspendMachine() {
+            const resp = await fetch("/proxy/power?action=sleep");
+            const json = resp.json();
+            
+            if (resp.ok) {
+                alert("Success!\n\nDebug info:\n" + json.response);
+            } else {
+                alert("Couldn't suspend the machine.");
+                return;
+            }
+        }
+
+        document.getElementById('wakeButton').onclick = wakeMachine;
+        document.getElementById('sleepButton').onclick = suspendMachine;
+        document.getElementById('rebootButton').onclick = rebootMachine;
+    </script>
+</body>
+</html>
