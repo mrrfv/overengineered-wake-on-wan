@@ -19,7 +19,11 @@ Whilst I do use this myself, there are lots of things that have to be improved b
 OWoW consists of two Node.js web applications that connect to each other and allow for remote waking and monitoring of your system.
 
 - The first web application, located in the `server` directory, is meant to be run on a single-board computer that's always on and connected to a VPN such as ZeroTier or Tailscale. It exposes the web interface for OWoW and allows for control of your machine anywhere - even when it's turned off.
-- The second web application, located in the `companion` directory, is meant to be run on the computer you want to control. It exposes the endpoints used to get system information as well as reboot/suspend your machine to the first web app.
+- The second (companion) web application, located in the `companion` directory, is meant to be run on the computer you want to control. It exposes the endpoints used to get system information as well as reboot/suspend your machine to the first web app.
+
+## Support
+
+Windows servers fully supported. Linux support is untested and might require the companion server to be run as root.
 
 ## Installation
 
@@ -36,10 +40,10 @@ OWoW consists of two Node.js web applications that connect to each other and all
 4. Edit `.env` to match your system: change the value of `COMPANION_SECRET` to a secure password and remember it - the Pi needs this password.
 5. Install pm2, a process manager for Node.js: `npm install --global pm2`
 6. If you're on Windows, install the pm2 windows service: `npm install pm2-windows-startup -g`
-7. Install the required dependencies for the script: `npm install`.
-8. For remote suspending to work properly, hibernation should be disabled with `powercfg -hibernate off`.
-9. Start the script with the following command: `pm2 start index.js`
-10. Configure automatic startup for the script: `pm2 startup` (linux) or `pm2-startup install` (windows)
+7. Configure automatic startup for the script: `pm2 startup` (linux) or `pm2-startup install` (windows)
+8. Install the required dependencies for the script: `npm install`.
+9. For remote suspending to work properly, hibernation should be disabled with `powercfg -hibernate off`.
+10. Start the script with the following command: `pm2 start index.js`
 11. Enable automatic startup for the script: `pm2 save`
 
 ### Installation of the server webapp on the Raspberry Pi
@@ -82,16 +86,19 @@ nvm install --lts
 
 ## Uninstall
 
-Use `pm2 unstartup` to disable automatic startup for the script. Then, you can just delete the script files. A reboot might be needed.
-
-## Support
-
-Windows servers supported. Linux support is untested and might require the companion server to be run as root.
+1. Use `pm2 unstartup` on Linux and macOS to disable automatic startup for the script. For Windows, use `pm2-startup uninstall`.
+2. Reboot your machine.
+3. Delete the script files.
+4. Optionally, delete pm2: `npm remove pm2 -g`
 
 ## Security considerations
 
-- HTTP isn't an encrypted protocol, so anyone with access to your WiFi connection is able to get your companion secret. VPNs like Tailscale and ZeroTier can encrypt this traffic for you.
-- For the reason above, you should only use the IP addresses provided by ZeroTier/Tailscale in configuration files.
-- Even if somebody gets your companion secret, they can only reboot/sleep your machine and get basic information about it, such as CPU, memory and motherboard information.
-- This should NOT be used in mission critical servers, as it hasn't been tested throughfully.
-- **DON'T OPEN UP YOUR PI TO THE INTERNET**. Use a VPN instead.
+Thanks to the way this project has been architectured, little damage can be done even if somebody gets your companion secret. Because the API endpoints never execute user input, an attacker is only able to reboot, sleep or wake your machine and get basic information about it, such as CPU, memory and motherboard information.
+
+Since HTTP isn't an encrypted protocol and the Pi's web server isn't protected with authentication, the usage of a VPN such as Tailscale or ZeroTier is **required**. These services have strict access control and encrypt the traffic between you, your Raspberry Pi, and your computer. You should only use the IP addresses provided by ZeroTier/Tailscale in configuration files.
+
+## TODO
+
+- Cleanup code
+- Test Linux support
+- Improve website: show detailed error information, including failed HTTP requests.
