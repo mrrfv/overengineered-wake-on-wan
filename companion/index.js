@@ -99,7 +99,7 @@ fastify.route({
 // Run the server
 const start = async () => {
 	try {
-	  await fastify.listen({ port: 4617, host: '0.0.0.0' });
+	  await fastify.listen({ port: process.env.SERVER_PORT || 4617, host: process.env.SERVER_HOST || '0.0.0.0' });
 	} catch (err) {
 	  fastify.log.error(err);
 	  process.exit(1);
