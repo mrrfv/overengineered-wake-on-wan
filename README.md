@@ -18,8 +18,8 @@ Whilst I do use this myself, there are lots of things that have to be improved b
 
 OWoW consists of two Node.js web applications that connect to each other and allow for remote waking and monitoring of your system.
 
-- The first web application, located in the `server` directory, is meant to be run on a single-board computer that's always on and connected to a VPN such as ZeroTier or Tailscale. It exposes the web interface for OWoW and allows for control of your machine anywhere - even when it's turned off.
-- The second (companion) web application, located in the `companion` directory, is meant to be run on the computer you want to control. It exposes the endpoints used to get system information as well as reboot/suspend your machine to the first web app.
+- The first (pi) web application, located in the `pi_server` directory, is meant to be run on a single-board computer that's always on and connected to a VPN such as ZeroTier or Tailscale. It exposes the web interface for OWoW and allows for control of your machine anywhere - even when it's turned off.
+- The second (target, also called "companion") web application located in the `target_server` directory, is meant to be run on the computer you want to control. It exposes the endpoints used to get system information as well as reboot/suspend your machine to the first web app.
 
 ## Support
 
@@ -31,11 +31,12 @@ Windows servers fully supported. Linux support is untested and might require the
 
 - a Raspberry Pi (a Zero works just fine, and is even preferred for its extremely low power consumption)
 - a PC with Wake on LAN enabled, and the MAC address of its Ethernet interface
+- Tailscale or ZeroTier installed on both the Pi and target machine to improve security and ensure better stability
 
-### Installation of the companion webapp on the computer you want to monitor
+### Installation of the target server on the computer you want to monitor
 
 1. Install Node.js and npm.
-2. Clone this repository in a place where you won't accidentally delete it and navigate to `./companion`.
+2. Clone this repository to a place where you won't accidentally delete it and navigate to `./target_server`.
 3. Copy `example.env` to `.env`.
 4. Edit `.env` to match your system: change the value of `COMPANION_SECRET` to a secure password and remember it - the Pi needs this password.
 5. Install pm2, a process manager for Node.js: `npm install --global pm2`
@@ -46,7 +47,7 @@ Windows servers fully supported. Linux support is untested and might require the
 10. Start the script with the following command: `pm2 start index.js`
 11. Enable automatic startup for the script: `pm2 save`
 
-### Installation of the server webapp on the Raspberry Pi
+### Installation of the `pi` webapp on the Raspberry Pi
 
 This guide assumes that you already have an operating system installed on the Pi with internet connectivity.
 
@@ -74,7 +75,7 @@ nvm install --lts
 
 - `COMPANION_SECRET` is the secret that is used to safely communicate with your computer. **This value MUST be the same as what you've set on your computer!** If your computer's `COMPANION_SECRET` is `password123`, then the Pi's `COMPANION_SECRET` must also be `password123`.
 - `MAC_ADDRESS` is the MAC address of your computer's network interface. This will be used for Wake on LAN.
-- `COMPANION_URL` is the URL for the companion server, i.e. what you've just configured on your PC. The companion server runs on port 4617, so use the following format to get the URL: `http://<COMPUTER_IP>:4617`
+- `COMPANION_URL` is the URL for the companion server, i.e. what you've just configured on your PC. The companion server runs on port 4617, so use the following format to get the URL: `http://<COMPUTER_IP>:4617`. For security reasons, you should use the IP address from your VPN such as ZeroTier or Tailscale here.
 - `URL_TO_PING` is the web server that OWoL can automatically monitor for you. This is useful if you're running something like Nextcloud or Plex on your machine. Set this to the value of `COMPANION_URL` if you don't have such a server.
 
 3. Install pm2, a process manager that will automatically start the script when the Pi is rebooted (if it loses power, for example): `sudo npm install --global pm2`
@@ -82,7 +83,11 @@ nvm install --lts
 5. Start the script with the following command: `pm2 start index.js`
 6. Configure automatic startup for the script: `pm2 startup`
 7. Enable automatic startup for the script: `pm2 save`
-8. Install a VPN like ZeroTier or Tailscale to securely access your Pi anywhere.
+8. Go to `[PI_IP]:3000` to access the web interface.
+
+### HTTPS
+
+HTTPS is optional if you are using Tailscale or ZeroTier, as both of which encrypt your traffic already. In order to use HTTPS, you need to get the HTTPS certificate and private key for your domain (see [here](https://tailscale.com/kb/1153/enabling-https/) for Tailscale) and add the paths for these files in `.env` (regardless of whether you're adding HTTPS to the Pi or target server).
 
 ## Uninstall
 

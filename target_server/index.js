@@ -2,8 +2,35 @@
 import * as dotenv from 'dotenv'
 dotenv.config();
 
+// Determine if HTTPS settings should be passed to Fastify
+import { normalize } from 'path'
+import fs from 'fs'
+let additionalFastifyOptions = {}
+if (process.env.HTTPS_CERTIFICATE_PATH !== ""
+	&& process.env.HTTPS_PRIVATE_KEY_PATH !== ""
+	&& fs.existsSync(normalize(process.env.HTTPS_CERTIFICATE_PATH))
+	&& fs.existsSync(normalize(process.env.HTTPS_PRIVATE_KEY_PATH))
+) {
+	console.log("Valid HTTPS settings found in environment variables. Using HTTPS");
+	additionalFastifyOptions = {
+		// Use HTTP2 if HTTPS is enabled
+		http2: true,
+		https: {
+			allowHTTP1: process.env.HTTPS_ALLOW_HTTP1 === "true" ? true : false, // there's a better way to do this...
+			key: fs.readFileSync(normalize(process.env.HTTPS_PRIVATE_KEY_PATH)),
+			cert: fs.readFileSync(normalize(process.env.HTTPS_CERTIFICATE_PATH))
+		}
+	}
+} else {
+	console.log("WARNING: HTTPS settings invalid or unset. Unencrypted HTTP will be used.");
+	console.log("This is not a problem if you are using a VPN such as Tailscale or ZeroTier.")
+}
+
 import Fastify from 'fastify'
-const fastify = Fastify({ logger: true });
+const fastify = Fastify({
+	logger: true,
+	...additionalFastifyOptions,
+});
 import * as si from 'systeminformation'
 import { spawn } from 'child_process'
 
@@ -11,8 +38,14 @@ import { spawn } from 'child_process'
 const os = (await si.osInfo()).platform;
 console.log(`Running on ${os}`);
 
-// sleep command
+// sleep function
 const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+// set up rate limting
+await fastify.register(import('@fastify/rate-limit'), {
+	max: 30,
+	timeWindow: '10 seconds'
+})
 
 // info route; gets info of the target device
 fastify.route({

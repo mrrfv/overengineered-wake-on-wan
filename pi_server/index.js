@@ -11,6 +11,37 @@ import fs from 'fs';
 // Store index.html in memory for slightly better performance on single-board computers
 const indexHTML = fs.readFileSync('static/index.html')
 
+// Determine if HTTPS settings should be passed to Fastify
+import { normalize } from 'path'
+import fs from 'fs'
+let additionalFastifyOptions = {}
+if (process.env.HTTPS_CERTIFICATE_PATH !== ""
+	&& process.env.HTTPS_PRIVATE_KEY_PATH !== ""
+	&& fs.existsSync(normalize(process.env.HTTPS_CERTIFICATE_PATH))
+	&& fs.existsSync(normalize(process.env.HTTPS_PRIVATE_KEY_PATH))
+) {
+	console.log("Valid HTTPS settings found in environment variables. Using HTTPS");
+	additionalFastifyOptions = {
+		// Use HTTP2 if HTTPS is enabled
+		http2: true,
+		https: {
+			allowHTTP1: process.env.HTTPS_ALLOW_HTTP1 === "true" ? true : false, // there's a better way to do this...
+			key: fs.readFileSync(normalize(process.env.HTTPS_PRIVATE_KEY_PATH)),
+			cert: fs.readFileSync(normalize(process.env.HTTPS_CERTIFICATE_PATH))
+		}
+	}
+} else {
+	console.log("WARNING: HTTPS settings invalid or unset. Unencrypted HTTP will be used.");
+	console.log("This is not a problem if you are using a VPN such as Tailscale or ZeroTier.")
+}
+
+
+// Use rate limit
+await fastify.register(import('@fastify/rate-limit'), {
+  max: 35,
+  timeWindow: '10 seconds',
+})
+
 // wake route; sends a WoL packet to the target device
 fastify.route({
 	method: 'GET',
