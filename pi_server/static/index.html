@@ -61,6 +61,54 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
 
+        function timeAgo(date1, date2) {
+            // get total seconds between the times
+            var delta = Math.abs(date2 - date1) / 1000;
+
+            // calculate (and subtract) whole days
+            var days = Math.floor(delta / 86400);
+            delta -= days * 86400;
+
+            // calculate (and subtract) whole hours
+            var hours = Math.floor(delta / 3600) % 24;
+            delta -= hours * 3600;
+
+            // calculate (and subtract) whole minutes
+            var minutes = Math.floor(delta / 60) % 60;
+            delta -= minutes * 60;
+
+            // what's left is seconds
+            var seconds = Math.round(delta % 60);
+
+        
+            // return a string based on the largest unit of time
+            if (days > 0) {
+                return days + " days ago";
+                } else if (hours > 0) {
+                    return hours + " hours ago";
+                } else if (minutes > 0) {
+                    return minutes + " minutes ago";
+                } else if (seconds > 3 ) { // show seconds if there hasn't been any updates in more than 3 seconds
+                    return seconds + " seconds ago";
+                } else {
+                    return "just now";
+            }
+        }
+
+        let lastUpdated = {
+            status: null,
+            info: null,
+        }
+
+        setInterval(() => {
+            if (lastUpdated.status !== null) {
+                document.getElementById('status_last_updated').innerText = timeAgo(new Date(), lastUpdated.status);
+            }
+            if (lastUpdated.info !== null) {
+                document.getElementById('info_last_updated').innerText = timeAgo(new Date(), lastUpdated.info);
+            }
+        }, 500)
+
         async function getServerPassword() {
             let password = prompt('Enter server password to run this action');
             if (!password) {
@@ -95,7 +143,7 @@
         async function fetch_status() {
             const resp = await fetch("/status?nocache=" + Date.now());
             if (resp.ok) {
-                document.getElementById('status_last_updated').innerText = Date();
+                lastUpdated.status = new Date();
             }
             const status = await resp.json();
             document.getElementById('status').innerText = `Monitored web server ${status.web_ok ? "online" : "offline"}, companion server ${status.companion_ok ? "online" : "offline"}`;
@@ -118,7 +166,7 @@
         async function fetch_info() {
             const resp = await fetch("/proxy/info");
             if (resp.ok) {
-                document.getElementById('info_last_updated').innerText = Date();
+                lastUpdated.info = new Date();
             }
             const {system_info, cpu_info, ram_info} = await resp.json();
             
