@@ -111,7 +111,8 @@ fastify.route({
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
 		// verify server password
-		if (await argon2.verify(process.env.SERVER_PASSWORD, request.headers["x-owow-server-password"])) {
+		const isServerPasswordCorrect = await argon2.verify(process.env.SERVER_PASSWORD, request.headers["x-owow-server-password"]);
+		if (!isServerPasswordCorrect) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid server password' });
 		}
 
