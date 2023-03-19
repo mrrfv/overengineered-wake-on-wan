@@ -123,6 +123,7 @@
                 }
             })
             const json = await resp.json();
+            if ('error' in json) return alert(`An error occurred while processing the request: ${json.error}`);
             if (json.result === true) {
                 return password;
             } else {
@@ -146,6 +147,7 @@
                 lastUpdated.status = new Date();
             }
             const status = await resp.json();
+            if ('error' in json) return alert(`An error occurred while processing a request: ${json.error}`);
             document.getElementById('status').innerText = `Monitored web server ${status.web_ok ? "online" : "offline"}, companion server ${status.companion_ok ? "online" : "offline"}`;
 
             for (const button of ['sleepButton', 'rebootButton']) {
@@ -169,6 +171,7 @@
                 lastUpdated.info = new Date();
             }
             const {system_info, cpu_info, ram_info} = await resp.json();
+            if ('error' in json) return alert(`An error occurred while processing a request: ${json.error}`);
             
             document.getElementById('system_info').innerText = `${system_info.manufacturer} ${system_info.model}`;
             document.getElementById('system_virtualized').innerText = system_info.virtual ? "Yes" : "No";
@@ -197,6 +200,7 @@
         async function wakeMachine() {
             const resp = await fetch("/wake");
             const json = resp.json();
+            if ('error' in json) return alert(`An error occurred while processing the request: ${json.error}`);
             
             if (resp.ok) {
                 alert("Successfully sent wake packet!\n\nDebug info:\n" + json.response);
@@ -210,6 +214,7 @@
             if (password === false) return;
             const resp = await fetchWithPassword("/proxy/power?action=reboot", password);
             const json = resp.json();
+            if ('error' in json) return alert(`An error occurred while processing the request: ${json.error}`);
             
             if (resp.ok) {
                 alert("Success!\n\nDebug info:\n" + json.response);
@@ -224,6 +229,7 @@
             if (password === false) return;
             const resp = await fetchWithPassword("/proxy/power?action=sleep", password);
             const json = resp.json();
+            if ('error' in json) return alert(`An error occurred while processing the request: ${json.error}`);
             
             if (resp.ok) {
                 alert("Success!\n\nDebug info:\n" + json.response);
