@@ -93,10 +93,12 @@ fastify.route({
 	},
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
+		// verify server password
 		if (await argon2.verify(process.env.SERVER_PASSWORD, request.headers["x-owow-server-password"])) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid server password' });
 		}
 
+		// check if the secret provided by the Pi is correct
 		if (request.query.secret !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
@@ -147,12 +149,14 @@ fastify.route({
 	},
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
+		// check if the secret provided by the Pi is correct
 		if (request.body.secret !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
 	},
 	handler: async function (request, reply) {
 		const { password } = request.body;
+		// verify server password
 		const result = await argon2.verify(process.env.SERVER_PASSWORD, password);
 		return { result: result }
 	}
