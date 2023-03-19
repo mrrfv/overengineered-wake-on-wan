@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "@fastify/rate-limit": "^8.0.0",
+    "argon2": "^0.30.3",
     "dotenv": "^16.0.3",
     "fastify": "^4.11.0",
     "node-fetch": "^3.3.0",

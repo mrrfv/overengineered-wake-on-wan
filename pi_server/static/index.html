@@ -78,7 +78,7 @@
             if (json.result === true) {
                 return password;
             } else {
-                alert('Invalid server password');
+                alert('Invalid server password. If you are the admin of this instance, please make sure that you have configured the server password using the hash-server-password.js utility.');
                 return false;
             }
         }

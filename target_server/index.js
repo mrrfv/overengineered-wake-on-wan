@@ -32,6 +32,7 @@ const fastify = Fastify({
 	...additionalFastifyOptions,
 });
 import * as si from 'systeminformation'
+import argon2 from 'argon2';
 import { spawn } from 'child_process'
 
 // get operating system information
@@ -92,7 +93,7 @@ fastify.route({
 	},
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
-		if (request.headers['x-owow-server-password'] !== process.env.SERVER_PASSWORD){
+		if (await argon2.verify(process.env.SERVER_PASSWORD, request.headers["x-owow-server-password"])) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid server password' });
 		}
 
@@ -150,9 +151,9 @@ fastify.route({
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
 	},
-	handler: function (request, reply) {
+	handler: async function (request, reply) {
 		const { password } = request.body;
-		const result = password === process.env.SERVER_PASSWORD;
+		const result = await argon2.verify(process.env.SERVER_PASSWORD, password);
 		return { result: result }
 	}
 });
