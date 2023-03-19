@@ -68,9 +68,9 @@ fastify.route({
 		wake(process.env.MAC_ADDRESS, (err, response) => {
 			if (err) {
 				console.error(err);
-				return { message: err.message, success: false }
+				return { error: err.message, success: false }
 			}
-			return { response, success: true }
+			return { "response": { response }, success: true }
 		});
 	}
 });
