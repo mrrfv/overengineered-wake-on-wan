@@ -21,8 +21,6 @@ requiredEnvVars.forEach(envVar => {
 	// console.log(`Found environment variable ${envVar} = ${process.env[envVar]}`)
 });
 
-import Fastify from 'fastify'
-const fastify = Fastify({ logger: true });
 import {wake} from 'wol'
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -53,6 +51,8 @@ if (process.env.HTTPS_CERTIFICATE_PATH !== ""
 	console.log("This is not a problem if you are using a VPN such as Tailscale or ZeroTier.")
 }
 
+import Fastify from 'fastify'
+const fastify = Fastify({ logger: true, ...additionalFastifyOptions });
 
 // Use rate limit
 await fastify.register(import('@fastify/rate-limit'), {
