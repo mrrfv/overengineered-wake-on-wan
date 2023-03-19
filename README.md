@@ -36,13 +36,13 @@ Windows servers fully supported. Linux support is untested and might require the
 ### Installation of the target server on the computer you want to monitor
 
 1. Install Node.js and npm.
-2. Clone this repository to a place where you won't accidentally delete it and navigate to `./target_server`.
+2. Clone this repository to a place where you won't accidentally delete it and navigate to `./target_server` in a terminal.
 3. Copy `example.env` to `.env`.
-4. Edit `.env` to match your system: change the value of `COMPANION_SECRET` to a secure password and remember it - the Pi needs this password.
-5. Install pm2, a process manager for Node.js: `npm install --global pm2`
-6. If you're on Windows, install the pm2 windows service: `npm install pm2-windows-startup -g`
-7. Configure automatic startup for the script: `pm2 startup` (linux) or `pm2-startup install` (windows)
-8. Install the required dependencies for the script: `npm install`.
+4. Edit `.env` to match your system: change the value of `COMPANION_SECRET` to a secure password and keep it somewhere safe - the Pi server will need this password.
+5. Run `npm install` to install the required dependencies for the script. Then, execute `node hash-server-password.js` in a terminal (being in the `./target_server` directory) to create a server password. You need to remember this password, because it allows you to remotely suspend or reboot your machine.
+6. Install pm2, a process manager for Node.js: `npm install --global pm2`
+7. If you're on Windows, install the pm2 windows service: `npm install pm2-windows-startup --global`
+8. Configure automatic startup for the script: `pm2 startup` (linux) or `pm2-startup install` (windows)
 9. For remote suspending to work properly, hibernation should be disabled with `powercfg -hibernate off`.
 10. Start the script with the following command: `pm2 start index.js`
 11. Enable automatic startup for the script: `pm2 save`
@@ -96,11 +96,13 @@ HTTPS is optional if you are using Tailscale or ZeroTier, as both of which encry
 3. Delete the script files.
 4. Optionally, delete pm2: `npm remove pm2 -g`
 
-## Security considerations
+## Security
 
-Thanks to the way this project has been architectured, little damage can be done even if somebody gets your companion secret. Because the API endpoints never execute user input, an attacker is only able to reboot, sleep or wake your machine and get basic information about it, such as CPU, memory and motherboard information.
+Several important security improvements have been introduced since the first iteration of this project. Most notably, it is now possible to encrypt all traffic between the you, the Pi and the target server using HTTPS, which adds an extra layer of protection on top of a VPN. A **server password** is also now required, that contols whether somebody can reboot or suspend your server. This password is *not known* in cleartext by the Pi or server, because it's hashed using Argon2 by default, ensuring that nobody except you can control your machine - even if the `.env` file is compromised.
 
-Since HTTP isn't an encrypted protocol and the Pi's web server isn't protected with authentication, the usage of a VPN such as Tailscale or ZeroTier is **required**. These services have strict access control and encrypt the traffic between you, your Raspberry Pi, and your computer. You should only use the IP addresses provided by ZeroTier/Tailscale in configuration files.
+Thanks to the way this project has been architectured, little damage can be done if somebody gets your companion secret or server password. Because the API endpoints never execute user input, an attacker is only able to reboot, sleep or wake your machine and get basic information about it, such as CPU, memory and motherboard information.
+
+Nonetheless, usage of a VPN such as Tailscale or ZeroTier is highly recommended. These services have strict access control and encrypt the traffic between you, your Raspberry Pi, and your computer on top of TLS. You should only use the IP addresses or domains provided by ZeroTier/Tailscale in configuration files.
 
 ## TODO
 
