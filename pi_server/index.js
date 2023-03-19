@@ -2,6 +2,25 @@
 import * as dotenv from 'dotenv'
 dotenv.config();
 
+// Check if the required environment variables are set
+const requiredEnvVars = [
+	"URL_TO_PING",
+	"COMPANION_SECRET",
+	"COMPANION_URL",
+	"MAC_ADDRESS",
+	"HTTPS_CERTIFICATE_PATH",
+	"HTTPS_PRIVATE_KEY_PATH",
+	"HTTPS_ALLOW_HTTP1"
+]
+
+requiredEnvVars.forEach(envVar => {
+	if (process.env[envVar] === undefined) {
+        throw new Error(`Required environment variable ${envVar} not set`);
+		process.exit(1);
+    }
+	// console.log(`Found environment variable ${envVar} = ${process.env[envVar]}`)
+});
+
 import Fastify from 'fastify'
 const fastify = Fastify({ logger: true });
 import {wake} from 'wol'

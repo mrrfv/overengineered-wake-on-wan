@@ -2,6 +2,23 @@
 import * as dotenv from 'dotenv'
 dotenv.config();
 
+// Check if the required environment variables are set
+const requiredEnvVars = [
+	"COMPANION_SECRET",
+	"SERVER_PASSWORD",
+	"HTTPS_CERTIFICATE_PATH",
+	"HTTPS_PRIVATE_KEY_PATH",
+	"HTTPS_ALLOW_HTTP1"
+]
+
+requiredEnvVars.forEach(envVar => {
+	if (process.env[envVar] === undefined) {
+        throw new Error(`Required environment variable ${envVar} not set`);
+		process.exit(1);
+    }
+	// console.log(`Found environment variable ${envVar} = ${process.env[envVar]}`)
+});
+
 // Determine if HTTPS settings should be passed to Fastify
 import { normalize } from 'path'
 import fs from 'fs'
