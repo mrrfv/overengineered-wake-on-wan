@@ -61,6 +61,37 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
 
+        async function getServerPassword() {
+            let password = prompt('Enter server password to run this action');
+            if (!password) {
+                alert('Password not provided');
+                return false;
+            }
+            const resp = await fetch("/proxy/verifyServerPassword", {
+                "method": "POST",
+                "body": JSON.stringify({ password }),
+                "headers": {
+                    "Content-Type": "application/json",
+                }
+            })
+            const json = await resp.json();
+            if (json.result === true) {
+                return password;
+            } else {
+                alert('Invalid server password');
+                return false;
+            }
+        }
+
+        async function fetchWithPassword(url, password) {
+            const resp = await fetch(url, {
+                headers: {
+                    'x-owow-server-password': password
+                }
+            });
+            return resp;
+        }
+
         async function fetch_status() {
             const resp = await fetch("/status?nocache=" + Date.now());
             if (resp.ok) {
@@ -105,7 +136,7 @@
 
         setInterval(() => {
             fetch_status();
-        }, 800);
+        }, 1500);
         fetch_info();
         setInterval(() => {
             fetch_info();
@@ -127,7 +158,9 @@
         }
 
         async function rebootMachine() {
-            const resp = await fetch("/proxy/power?action=reboot");
+            const password = await getServerPassword();
+            if (password === false) return;
+            const resp = await fetchWithPassword("/proxy/power?action=reboot", password);
             const json = resp.json();
             
             if (resp.ok) {
@@ -139,7 +172,9 @@
         }
 
         async function suspendMachine() {
-            const resp = await fetch("/proxy/power?action=sleep");
+            const password = await getServerPassword();
+            if (password === false) return;
+            const resp = await fetchWithPassword("/proxy/power?action=sleep", password);
             const json = resp.json();
             
             if (resp.ok) {

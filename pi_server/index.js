@@ -13,12 +13,11 @@ const indexHTML = fs.readFileSync('static/index.html')
 
 // Determine if HTTPS settings should be passed to Fastify
 import { normalize } from 'path'
-import fs from 'fs'
 let additionalFastifyOptions = {}
 if (process.env.HTTPS_CERTIFICATE_PATH !== ""
 	&& process.env.HTTPS_PRIVATE_KEY_PATH !== ""
-	&& fs.existsSync(normalize(process.env.HTTPS_CERTIFICATE_PATH))
-	&& fs.existsSync(normalize(process.env.HTTPS_PRIVATE_KEY_PATH))
+	&& fs.existsSync(process.env.HTTPS_CERTIFICATE_PATH)
+	&& fs.existsSync(process.env.HTTPS_PRIVATE_KEY_PATH)
 ) {
 	console.log("Valid HTTPS settings found in environment variables. Using HTTPS");
 	additionalFastifyOptions = {
@@ -67,13 +66,13 @@ fastify.route({
 		let companion_response;
 
 		try {
-			web_response = await fetch(process.env.URL_TO_PING, { signal: AbortSignal.timeout(5000) });
+			web_response = await fetch(process.env.URL_TO_PING, { signal: AbortSignal.timeout(1000) });
 		} catch {
 			web_response = { ok: false }
 		}
 
 		try {
-			companion_response = await fetch(process.env.COMPANION_URL + '/ping', { signal: AbortSignal.timeout(5000) });
+			companion_response = await fetch(process.env.COMPANION_URL + '/ping', { signal: AbortSignal.timeout(1000) });
 		} catch {
 			companion_response = { ok: false }
 		}
@@ -95,6 +94,34 @@ fastify.route({
 	}
 });
 
+// Verifies server password
+fastify.route({
+	method: 'POST',
+	url: '/proxy/verifyServerPassword',
+	schema: {
+		body: {
+		  type: 'object',
+		  required: ['password'],
+		  properties: {
+			password: { type: 'string' },
+		  }
+		}
+	},
+	handler: async (request, reply) => {
+		let response = await fetch(process.env.COMPANION_URL + '/verifyServerPassword', {
+			signal: AbortSignal.timeout(2500),
+			method: 'POST',
+			body: JSON.stringify({ password: request.body.password, secret: process.env.COMPANION_SECRET }),
+			headers: {
+				'Content-Type': 'application/json',
+			}
+		});
+		let json = response.json();
+
+		return json;
+	}
+});
+
 // Reboots/suspends machine
 fastify.route({
 	method: 'GET',
@@ -104,9 +131,20 @@ fastify.route({
 		querystring: {
 		  action: { type: 'string' }
 		},
+		headers: {
+			type: 'object',
+			required: ['x-owow-server-password'],
+			properties: {
+			  'x-owow-server-password': { type: 'string' }
+			}
+		}
 	},
 	handler: async (request, reply) => {
-		let response = await fetch(`${process.env.COMPANION_URL}/power?secret=${encodeURIComponent(process.env.COMPANION_SECRET)}&action=${encodeURIComponent(request.query.action)}`);
+		let response = await fetch(`${process.env.COMPANION_URL}/power?secret=${encodeURIComponent(process.env.COMPANION_SECRET)}&action=${encodeURIComponent(request.query.action)}`, {
+			headers: {
+				'x-owow-server-password': request.headers['x-owow-server-password'],
+			}
+		});
 		let json = response.json();
 
 		return json;

@@ -82,9 +82,20 @@ fastify.route({
 		  secret: { type: 'string' },
 		  action: { type: 'string' }
 		},
+		headers: {
+			type: 'object',
+			required: ['x-owow-server-password'],
+			properties: {
+			  'x-owow-server-password': { type: 'string' }
+			}
+		}
 	},
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
+		if (request.headers['x-owow-server-password'] !== process.env.SERVER_PASSWORD){
+			return reply.code(401).send({ error: 'Unauthorized - invalid server password' });
+		}
+
 		if (request.query.secret !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
@@ -117,6 +128,32 @@ fastify.route({
 				spawn("shutdown", ["-r"]);
 			}
 		}
+	}
+});
+
+fastify.route({
+	method: 'POST',
+	url: '/verifyServerPassword',
+	schema: {
+	  body: {
+		type: 'object',
+		required: ['password', 'secret'],
+		properties: {
+		  password: { type: 'string' },
+		  secret: { type: 'string' }
+		}
+	  }
+	},
+	// this function is executed for every request before the handler is executed
+	preHandler: async (request, reply) => {
+		if (request.body.secret !== process.env.COMPANION_SECRET) {
+			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
+		}
+	},
+	handler: function (request, reply) {
+		const { password } = request.body;
+		const result = password === process.env.SERVER_PASSWORD;
+		return { result: result }
 	}
 });
 
