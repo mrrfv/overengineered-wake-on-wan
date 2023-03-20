@@ -100,6 +100,11 @@
             info: null,
         }
 
+        let connectionStatus = {
+            web_ok: null,
+            companion_ok: null,
+        }
+
         setInterval(() => {
             if (lastUpdated.status !== null) {
                 document.getElementById('status_last_updated').innerText = timeAgo(new Date(), lastUpdated.status);
@@ -150,6 +155,9 @@
             if ('error' in json) return alert(`An error occurred while processing a request: ${json.error}`);
             document.getElementById('status').innerText = `Monitored web server ${json.web_ok ? "online" : "offline"}, companion server ${json.companion_ok ? "online" : "offline"}`;
 
+            connectionStatus.companion_ok = json.companion_ok;
+            connectionStatus.web_ok = json.web_ok;
+
             for (const button of ['sleepButton', 'rebootButton']) {
                 if (json.companion_ok) {
                     document.getElementById(button).disabled = false;
@@ -171,7 +179,11 @@
                 lastUpdated.info = new Date();
             }
             const json = await resp.json();
-            if ('error' in json) return alert(`An error occurred while processing a request: ${json.error}`);
+            // only show error if the companion server appears to be online,
+            // because we can't get system info from the target if it's offline.
+            if ('error' in json && connectionStatus.companion_ok === true) {
+                return alert(`An error occurred while processing a request: ${json.error}`);
+            } else return;
 
             const { system_info, cpu_info, ram_info } = json;
             
