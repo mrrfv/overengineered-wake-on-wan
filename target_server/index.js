@@ -162,10 +162,9 @@ fastify.route({
 	schema: {
 	  body: {
 		type: 'object',
-		required: ['password', 'secret'],
+		required: ['password'],
 		properties: {
 		  password: { type: 'string' },
-		  secret: { type: 'string' }
 		}
 	  },
 	  headers: {

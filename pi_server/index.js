@@ -186,7 +186,7 @@ fastify.route({
 		let response = await fetch(`${process.env.COMPANION_URL}/power?action=${encodeURIComponent(request.query.action)}`, {
 			headers: {
 				'x-owow-server-password': request.headers['x-owow-server-password'],
-				'x-owow-secret': encodeURIComponent(process.env.COMPANION_SECRET),
+				'x-owow-secret': process.env.COMPANION_SECRET,
 				...companionHttpHeaders
 			}
 		});
