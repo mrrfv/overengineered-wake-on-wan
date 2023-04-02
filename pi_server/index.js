@@ -51,6 +51,17 @@ if (process.env.HTTPS_CERTIFICATE_PATH !== ""
 	console.log("This is not a problem if you are using a VPN such as Tailscale or ZeroTier.")
 }
 
+// Determine if Cloudflare Access headers should be used
+if (process.env.CLOUDFLARE_ACCESS_CLIENT_ID && process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET) {
+	console.log("Using Cloudflare Access HTTP headers")
+	const companionHttpHeaders = {
+		"CF-Access-Client-Id": process.env.CLOUDFLARE_ACCESS_CLIENT_ID,
+		"CF-Access-Client-Secret": process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET,
+	};
+} else {
+	const companionHttpHeaders = {};
+}
+
 import Fastify from 'fastify'
 const fastify = Fastify({ logger: true, ...additionalFastifyOptions });
 
@@ -91,7 +102,10 @@ fastify.route({
 		}
 
 		try {
-			companion_response = await fetch(process.env.COMPANION_URL + '/ping', { signal: AbortSignal.timeout(1000) });
+			companion_response = await fetch(process.env.COMPANION_URL + '/ping', {
+				signal: AbortSignal.timeout(1000),
+				headers: companionHttpHeaders
+			});
 		} catch {
 			companion_response = { ok: false }
 		}
@@ -106,7 +120,10 @@ fastify.route({
 	method: 'GET',
 	url: '/proxy/info',
 	handler: async (request, reply) => {
-		let response = await fetch(process.env.COMPANION_URL + '/info?secret=' + encodeURIComponent(process.env.COMPANION_SECRET), { signal: AbortSignal.timeout(20000) });
+		let response = await fetch(process.env.COMPANION_URL + '/info?secret=' + encodeURIComponent(process.env.COMPANION_SECRET), {
+			signal: AbortSignal.timeout(20000),
+			headers: companionHttpHeaders
+		});
 		let json = response.json();
 
 		return json;
@@ -133,6 +150,7 @@ fastify.route({
 			body: JSON.stringify({ password: request.body.password, secret: process.env.COMPANION_SECRET }),
 			headers: {
 				'Content-Type': 'application/json',
+				...companionHttpHeaders
 			}
 		});
 		let json = response.json();
@@ -162,6 +180,7 @@ fastify.route({
 		let response = await fetch(`${process.env.COMPANION_URL}/power?secret=${encodeURIComponent(process.env.COMPANION_SECRET)}&action=${encodeURIComponent(request.query.action)}`, {
 			headers: {
 				'x-owow-server-password': request.headers['x-owow-server-password'],
+				...companionHttpHeaders
 			}
 		});
 		let json = response.json();
