@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 3000/tcp
 
 # Start the app using node
-CMD ["node", "app.js"]
+CMD ["node", "index.js"]
