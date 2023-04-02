@@ -51,15 +51,17 @@ if (process.env.HTTPS_CERTIFICATE_PATH !== ""
 	console.log("This is not a problem if you are using a VPN such as Tailscale or ZeroTier.")
 }
 
+let companionHttpHeaders;
+
 // Determine if Cloudflare Access headers should be used
 if (process.env.CLOUDFLARE_ACCESS_CLIENT_ID && process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET) {
 	console.log("Using Cloudflare Access HTTP headers")
-	const companionHttpHeaders = {
+	companionHttpHeaders = {
 		"CF-Access-Client-Id": process.env.CLOUDFLARE_ACCESS_CLIENT_ID,
 		"CF-Access-Client-Secret": process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET,
 	};
 } else {
-	const companionHttpHeaders = {};
+	companionHttpHeaders = {};
 }
 
 import Fastify from 'fastify'
