@@ -70,14 +70,18 @@ fastify.route({
 	method: 'GET',
 	url: '/info',
 	schema: {
-		// request needs to have a querystring with a `secret` parameter
-		querystring: {
-		  secret: { type: 'string' }
-		},
+		// request needs to have a header with a `x-owow-secret` parameter
+		headers: {
+			type: 'object',
+			required: ['x-owow-secret'],
+			properties: {
+			  'x-owow-secret': { type: 'string' }
+			}
+		}
 	},
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
-		if (request.query.secret !== process.env.COMPANION_SECRET) {
+		if (request.headers["x-owow-secret"] !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
 	},
@@ -95,17 +99,17 @@ fastify.route({
 	method: 'GET',
 	url: '/power',
 	schema: {
-		// request needs to have a querystring with `action` and `secret` parameters
+		// request needs to have a querystring with `action` parameter
 		querystring: {
-		  secret: { type: 'string' },
 		  action: { type: 'string' }
 		},
 		headers: {
 			type: 'object',
-			required: ['x-owow-server-password'],
+			required: ['x-owow-server-password', 'x-owow-secret'],
 			properties: {
-			  'x-owow-server-password': { type: 'string' }
-			}
+			  'x-owow-server-password': { type: 'string' },
+			  'x-owow-secret': { type: 'string' }
+			},
 		}
 	},
 	// this function is executed for every request before the handler is executed
@@ -117,7 +121,7 @@ fastify.route({
 		}
 
 		// check if the secret provided by the Pi is correct
-		if (request.query.secret !== process.env.COMPANION_SECRET) {
+		if (request.headers["x-owow-secret"] !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
 
@@ -163,12 +167,19 @@ fastify.route({
 		  password: { type: 'string' },
 		  secret: { type: 'string' }
 		}
-	  }
+	  },
+	  headers: {
+		type: 'object',
+		required: ['x-owow-secret'],
+		properties: {
+		  'x-owow-secret': { type: 'string' }
+		},
+	}
 	},
 	// this function is executed for every request before the handler is executed
 	preHandler: async (request, reply) => {
 		// check if the secret provided by the Pi is correct
-		if (request.body.secret !== process.env.COMPANION_SECRET) {
+		if (request.headers["x-owow-secret"] !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
 	},

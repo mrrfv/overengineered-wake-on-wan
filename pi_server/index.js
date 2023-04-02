@@ -122,9 +122,12 @@ fastify.route({
 	method: 'GET',
 	url: '/proxy/info',
 	handler: async (request, reply) => {
-		let response = await fetch(process.env.COMPANION_URL + '/info?secret=' + encodeURIComponent(process.env.COMPANION_SECRET), {
-			signal: AbortSignal.timeout(20000),
-			headers: companionHttpHeaders
+		let response = await fetch(process.env.COMPANION_URL + '/info', {
+			signal: AbortSignal.timeout(15000),
+			headers: {
+				...companionHttpHeaders,
+				'x-owow-secret': process.env.COMPANION_SECRET
+			}
 		});
 		let json = response.json();
 
@@ -149,9 +152,10 @@ fastify.route({
 		let response = await fetch(process.env.COMPANION_URL + '/verifyServerPassword', {
 			signal: AbortSignal.timeout(2500),
 			method: 'POST',
-			body: JSON.stringify({ password: request.body.password, secret: process.env.COMPANION_SECRET }),
+			body: JSON.stringify({ password: request.body.password }),
 			headers: {
 				'Content-Type': 'application/json',
+				'x-owow-secret': process.env.COMPANION_SECRET,
 				...companionHttpHeaders
 			}
 		});
@@ -179,9 +183,10 @@ fastify.route({
 		}
 	},
 	handler: async (request, reply) => {
-		let response = await fetch(`${process.env.COMPANION_URL}/power?secret=${encodeURIComponent(process.env.COMPANION_SECRET)}&action=${encodeURIComponent(request.query.action)}`, {
+		let response = await fetch(`${process.env.COMPANION_URL}/power?action=${encodeURIComponent(request.query.action)}`, {
 			headers: {
 				'x-owow-server-password': request.headers['x-owow-server-password'],
+				'x-owow-secret': encodeURIComponent(process.env.COMPANION_SECRET),
 				...companionHttpHeaders
 			}
 		});
