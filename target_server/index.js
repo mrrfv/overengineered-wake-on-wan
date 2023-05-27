@@ -84,6 +84,10 @@ fastify.route({
 		if (request.headers["x-owow-secret"] !== process.env.COMPANION_SECRET) {
 			return reply.code(401).send({ error: 'Unauthorized - invalid secret' });
 		}
+
+		if (process.env.DISABLE_INFO === "true") {
+			return reply.code(400).send({ error: "The info route is disabled. Check your server configuration." })
+		}
 	},
 	handler: async (request, reply) => {
 		let system_info = await si.system();
@@ -113,7 +117,7 @@ fastify.route({
 		}
 	},
 	// this function is executed for every request before the handler is executed
-	preHandler: async (request, reply) => {
+	preHandler: async (request, reply) => {		
 		// verify server password
 		const isServerPasswordCorrect = await argon2.verify(process.env.SERVER_PASSWORD, request.headers["x-owow-server-password"]);
 		if (!isServerPasswordCorrect) {
@@ -127,6 +131,14 @@ fastify.route({
 
 		if (request.query.action !== "reboot" && request.query.action !== "sleep") {
 			return reply.code(500).send({ error: "Invalid action." })
+		}
+
+		if (request.query.action == "sleep" && process.env.DISABLE_SLEEP == "true") {
+			return reply.code(400).send({ error: "Sleep is disabled." })
+		}
+
+		if (request.query.action == "reboot" && process.env.DISABLE_REBOOT == "true") {
+			return reply.code(400).send({ error: "The reboot action is disabled." })
 		}
 	},
 	handler: async (request, reply) => {
@@ -191,13 +203,17 @@ fastify.route({
 });
 
 // ping
-fastify.route({
-	method: 'GET',
-	url: '/ping',
-	handler: async (request, reply) => {
-		return { pong: true, whoami: "Overengineered Wake On WAN by github.com/mrrfv" }
-	}
-});
+if (process.env.DISABLE_PING !== "true") {
+	fastify.route({
+		method: 'GET',
+		url: '/ping',
+		handler: async (request, reply) => {
+			return { pong: true, whoami: "Overengineered Wake On WAN by github.com/mrrfv" }
+		}
+	});
+} else {
+	console.log("Ping is disabled, not adding route.");
+}
 
 // Run the server
 const start = async () => {
