@@ -6,7 +6,7 @@
     "dotenv": "^16.0.3",
     "fastify": "^4.28.1",
     "node-fetch": "^3.3.0",
-    "systeminformation": "^5.21.7",
+    "systeminformation": "^5.23.8",
     "wol": "^1.0.7"
   }
 }
